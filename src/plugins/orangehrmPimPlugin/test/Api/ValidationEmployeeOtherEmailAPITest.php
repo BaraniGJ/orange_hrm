@@ -19,6 +19,9 @@
 
 namespace OrangeHRM\Tests\Pim\Api;
 
+use OrangeHRM\Authentication\Auth\User;
+use OrangeHRM\Core\Api\CommonParams;
+use OrangeHRM\Core\Authorization\Manager\BasicUserRoleManager;
 use OrangeHRM\Framework\Services;
 use OrangeHRM\Pim\Api\ValidationEmployeeOtherEmailAPI;
 use OrangeHRM\Tests\Util\EndpointIntegrationTestCase;
@@ -42,6 +45,51 @@ class ValidationEmployeeOtherEmailAPITest extends EndpointIntegrationTestCase
     public function dataProviderForTestGetOne(): array
     {
         return $this->getTestCases('EmployeeOtherEmailValidationTestCase.yaml', 'GetOne');
+    }
+
+    public function testGetValidationRuleForGetOne(): void
+    {
+        $userRoleManager = $this->getMockBuilder(BasicUserRoleManager::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getAccessibleEntityIds'])
+            ->getMock();
+        $userRoleManager->expects($this->exactly(2))
+            ->method('getAccessibleEntityIds')
+            ->willReturn([1, 2]);
+
+        $authUser = $this->getMockBuilder(User::class)
+            ->onlyMethods(['getEmpNumber'])
+            ->disableOriginalConstructor()
+            ->getMock();
+        $authUser->expects($this->exactly(2))
+            ->method('getEmpNumber')
+            ->willReturn(2);
+        $this->createKernelWithMockServices(
+            [
+                Services::USER_ROLE_MANAGER => $userRoleManager,
+                Services::AUTH_USER => $authUser
+            ]
+        );
+        $api = new ValidationEmployeeOtherEmailAPI($this->getRequest());
+        $rules = $api->getValidationRuleForGetOne();
+        $this->assertTrue(
+            $this->validate(
+                [
+                    ValidationEmployeeOtherEmailAPI::PARAMETER_OTHER_EMAIL => 'kayla0001@xample.com',
+                    CommonParams::PARAMETER_EMP_NUMBER => 1,
+                ],
+                $rules
+            )
+        );
+        $this->assertFalse(
+            $this->validate(
+                [
+                    ValidationEmployeeOtherEmailAPI::PARAMETER_OTHER_EMAIL => 'kayla0001@xample.com',
+                    CommonParams::PARAMETER_EMP_NUMBER => 3,
+                ],
+                $rules
+            )
+        );
     }
 
     public function testUpdate(): void
