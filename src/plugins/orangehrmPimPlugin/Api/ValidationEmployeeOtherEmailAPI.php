@@ -112,7 +112,10 @@ class ValidationEmployeeOtherEmailAPI extends Endpoint implements ResourceEndpoi
                 new Rule(Rules::STRING_TYPE),
                 new Rule(Rules::LENGTH, [null, self::PARAM_RULE_OTHER_EMAIL_MAX_LENGTH]),
             ),
-            new ParamRule(CommonParams::PARAMETER_EMP_NUMBER),
+            new ParamRule(
+                CommonParams::PARAMETER_EMP_NUMBER,
+                new Rule(Rules::IN_ACCESSIBLE_EMP_NUMBERS)
+            ),
         );
     }
 
